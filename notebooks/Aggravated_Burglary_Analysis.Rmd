@@ -29,7 +29,7 @@ Perform a spatial join to determine the census tract in which each burglary occu
 
 ```{r}
 burglaries_sf <- st_as_sf(
-  burglaries |> drop_na(latitude, latitude),
+  burglaries |> drop_na(latitude, longitude),
   coords = c("longitude", "latitude"),
   crs = st_crs(DC_shapefile)
   )
@@ -109,12 +109,31 @@ agg_cencus_t
 Which census tract had the highest number of burglaries? Which census tract had the highest number of burglaries per 1000 residents? 
 
 ```{r}
-max_count_agg_cencus <- agg_cencus_t |> 
-  slice_max(Count, n = 1)
-max_count_agg_cencus
+# Aggregate unique incidents 
+agg_crime_prop <- unique_incidents |>
+  group_by(NAME) |>
+  summarize(
+    Count = n(),
+    Population = mean(population, na.rm = TRUE),
+    median_income = mean(median_income, na.rm = TRUE)) |>
+  mutate(Burglary_rate = (Count / Population) * 1000)
+
+# Drop extra rows with negative values
+sort_prop_crime <- agg_crime_prop |> 
+  filter(median_income > 0) |> 
+  arrange(desc(Burglary_rate))
+
+sort_prop_crime
 ```
 
 We're interested in the relationship between median income and number of aggravated burglaries, so examine those variables on their own and together to see what you can find. You may want to perform additional calculations, create plots, etc.
+
+```{r}
+library(ggplot2)
+
+ggplot(sort_prop_crime, aes(x = median_income, y = Burglary_rate)) +
+  geom_point() 
+```
 
 
 
@@ -126,6 +145,33 @@ Additional Resources for Generalized Linear Models:
 * [Generalized Linear Models in R](https://app.datacamp.com/learn/courses/generalized-linear-models-in-r), a DataCamp course
 * [Beyond Multiple Linear Regression, Chapter 4](https://bookdown.org/roback/bookdown-BeyondMLR/ch-poissonreg.html)
 
+```{r}
+burg_poisson <- glm(Count ~ median_income,
+                    family = poisson,
+                    data = sort_prop_crime,
+                    offset = log(Population))
+summary(burg_poisson)
+```
+
+```{r}
+burg_poisson |> 
+  coef() |> 
+  exp()
+```
+
+```{r}
+burg_poisson |> 
+  coef() |> 
+  exp()
+```
+
+```{r}
+
+```
+
+
+
+
 ### Bonus: APIs in R
 
 The data that you used for this project can be obtained through [the Nashville Open Data Portal](https://datanashvillegov-nashville.hub.arcgis.com/datasets/d747436243e9439e968fce056545016a_0/explore?location=36.185326%2C-86.784950%2C9.92) and through the [US Census 2020 American Community Survey API](https://www.census.gov/data/developers/data-sets/acs-5year.html). Utilize these APIs to retrieve the data used in this project (and any other data that you want to incorporate into your analysis). Hints: First, make sure to check out the [API Docs](https://datanashvillegov-nashville.hub.arcgis.com/datasets/d747436243e9439e968fce056545016a_0/api) for the Nashville Open Data API. When using the Census API, population, B01001_001E, is contained in the detailed tables and median income, S1901_C01_012E, is contained in the subject tables. Tennessee's FIPS code is 47 and Davidson County's FIPS code is 37. 
@@ -133,7 +179,8 @@ The data that you used for this project can be obtained through [the Nashville O
 
 
 
-```{r}
 
-```
+
+
+
 
