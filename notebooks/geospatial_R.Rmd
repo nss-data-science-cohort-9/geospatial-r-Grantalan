@@ -4,8 +4,6 @@ output: html_notebook
 ---
 
 ```{r}
-#install.packages("sf")
-#install.packages("leaflet")
 library(sf)
 library(tidyverse)
 ```
@@ -14,6 +12,12 @@ Let's load in our zipcode dataset. This is a geojson file, which was downloaded 
 ```{r}
 zipcodes <- st_read('../data/zipcodes.geojson')
 ```
+
+```{r}
+install.packages("sf")
+install.packages("leaflet")
+```
+
 
 Notice that the ouput provides some information about the data we just read in. It contains multipolygons and is using WGS 84 as the CRS, or coordinate reference system, which defines how the points on the globe are mapped to the 2-dimensional projection we are working with. 
 
